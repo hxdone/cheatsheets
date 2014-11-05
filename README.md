@@ -1,4 +1,4 @@
 cheatsheets
 ===========
 
-Some code snippets for quick lookup.
+Code snippets for quick lookup.
