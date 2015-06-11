@@ -13,22 +13,35 @@ set -o nounset # readable version of "set -u"
 set -o errexit # readable version of "set -e", disabled by "set +e"
 set -o pipefail
 
-# turn an "if-else" statement into a "condition || false_action && true_action" statement.  # it's compact especially when condition is exit status of a command. 
-[[ $# -eq 1 ]] || { echo "Usage: $0 ARG"; exit 1; } && { ARG=$1; } 
-echo "ARG:$ARG"
+# turn an "if-else" statement into a "condition || false_action && true_action" statement, making the code compact
+# it's compulsory when condition is the exit status of a command in case of enabling errexit
+[[ $# -eq 2 ]] || { echo "Usage: $0 ARG_1 ARG_2"; exit 1; } && { ARG_1="$1"; ARG_2="$2"; } 
 
+# space issue 1: always use "$@" instead of $@ to deal with 
+for arg in "$@" ; do
+	echo "$arg"
+done
+
+# space issue 2:  using find and xargs together
+# * add -print0 option to find, thus separates filenames with a null character rather than new lines
+# * use -0 with xargs
+touch "foo bar" # create a file with a name contains space 
+find -print0 | xargs -0 ls -all
+
+# directory existence issues
+# mkdir: use -p to create necessary parent directories 
+# rm: use -f to continue siliently even if the specified file does not exist
+mkdir -p foo/bar
+rm -f tmp.txt
+
+# errexit issue
 # allow some commands to return non-zero status by putting them between "set +e" and "set -e"
+# othewise the script will exit due to the non-zero return value
 set +e
 grep "^	$" tmp.txt # grep return non-zero if tmp.txt does not exist or does not match the specified pattern
 set -e
 
-# mkdir: use -p to create necessary parent directories 
-mkdir -p foo/bar
-
-# rm: use -f to continue siliently even if the specified file does not exist
-rm -f tmp.txt
-
-# LOCK implementation:
+# LOCK implementation to solve exclusive access:
 # * trap statement provides a similar semantic ability with "exception" statement in some advanced languages like java or python
 # * use IO redirection and bash’s noclobber mode to avoid race condition 
 LOCK_FILE=LOCK_XXX
